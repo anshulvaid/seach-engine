@@ -31,7 +31,7 @@ def computeWordFrequencies(TokenList):
 
 def printF(Frequencies):
 	for k,v in sorted(Frequencies.items(), key=lambda t:(t[1],t[0]), reverse=True):
-		print("{0} -> {1}".format(k,v))
+		print("{0}, {1}".format(k,v))
 
 def main(argv):
 	if len(argv) < 2:

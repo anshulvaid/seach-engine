@@ -31,5 +31,6 @@ def main(argv):
 	else:
 		count = intersect(argv[1], argv[2])
 		print (count)
+		
 if __name__ == "__main__":
 	main(sys.argv)
