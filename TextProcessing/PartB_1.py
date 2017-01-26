@@ -22,7 +22,7 @@ def intersect(filepath1, filepath2):
 			for word in words:
 				if word.lower() in uni_items:
 					result.add(word.lower())
-	print(result)
+	#print(result)
 	return len(result)
 
 def main(argv):

@@ -8,24 +8,16 @@ import sys
 # 		self.val = value
 
 def tokenize(TextFilePath):
-	tokenList = []
+	freq = {}
 	with open(TextFilePath) as fi:
 		for line in fi:
 			words = filter(None,re.split("\W+|_", line))
-			tokenList += words
-			# for word in words:
-			# 	token = Token(word)
-			# 	tokenList.append(token)
-	return tokenList
-
-def computeWordFrequencies(TokenList):
-	freq = {}
-	for token in TokenList:
-		lower = token.lower()
-		if lower in freq:
-			freq[lower] += 1
-		else:
-		 	freq[lower] = 1
+			for word in words:
+				lower = word.lower()
+				if lower in freq:
+					freq[lower] += 1
+				else:
+				 	freq[lower] = 1
 	return freq
 
 
@@ -37,8 +29,8 @@ def main(argv):
 	if len(argv) < 2:
 		print("Please enter the file name.")
 	else:
-		tokens = tokenize(argv[1])
-		freq = computeWordFrequencies(tokens)
+		freq = tokenize(argv[1])
+		# freq = computeWordFrequencies(tokens)
 		printF(freq)
 
 if __name__ == "__main__":
