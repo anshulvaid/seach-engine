@@ -8,9 +8,12 @@ import time
 from Index import Dictionary, Postings
 from bs4 import BeautifulSoup
 from bs4 import Comment
-from nltk.stem.porter import PorterStemmer
+from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
+import sys
 
+reload(sys)
+sys.setdefaultencoding('utf-8')
 start_time = time.time()
 stops = set(stopwords.words("english"))
 
@@ -18,52 +21,56 @@ def main():
 	
 	urls = []
 	index = {}
+	tokens =[]
 	total_docs = 0
 	for counter in range(75):
 		path = 'WEBPAGES_RAW/' + str(counter)
 		for filename in os.listdir(path):
 			file_path = path + "/" + filename	
-			try:
-				file = open(file_path)
-				soup = BeautifulSoup(file, 'html.parser')
-				soup = clean_html(soup);
-				#docID is made of folder number concatenated with _filename
-				docId = str(counter) + "_" + filename
-				total_docs += 1
-				title = extract_title(soup)
+			# try:
+			file = open(file_path)
+			soup = BeautifulSoup(file, 'html.parser')
+			soup = clean_html(soup);
+			#docID is made of folder number concatenated with _filename
+			docId = str(counter) + "_" + filename
+			total_docs += 1
+			title = extract_title(soup)
 
+			# commented print for now so that it doesn't slow down the processing
+			# if title:
+			# 	print "Title : " + title
+			
+			content = extract_content(soup)
+			if content:
 				# commented print for now so that it doesn't slow down the processing
-				# if title:
-				# 	print "Title : " + title
-				
-				content = extract_content(soup)
-				if content:
-					# commented print for now so that it doesn't slow down the processing
-					# print "Content\n"
-					text = '\n'.join([x for x in content.split("\n") if x.strip()!=''])			
-					tokens = generate_tokens(text)
+				# print "Content\n"
+				text = '\n'.join([x for x in content.split("\n") if x.strip()!=''])	
+				# generate tokens for title and body text
+				if title:
+					text =  title + "\n" + text		
+				tokens = generate_tokens(text)
 
-					# might look complicated at first
-					# iterate over all the words that we obtained
-					for k, v in tokens.iteritems():
-						# create new object for Dictionary (referring index terminology) with only 'term' for now 
-						# TODO: Figure out the docFrequency part
-						obj_dict = Dictionary(k)
+				# might look complicated at first
+				# iterate over all the words that we obtained
+				for k, v in tokens.iteritems():
+					# create new object for Dictionary (referring index terminology) with only 'term' for now 
+					# TODO: Figure out the docFrequency part
+					obj_dict = Dictionary(k)
 
-						# create the postings object with docID and term frequency
-						obj_postings = Postings(docId, v) 
-						if obj_dict in index:
-							index[obj_dict].insert(len(index[obj_dict]),obj_postings)
-						else:
-							index[obj_dict] = list()
-							index[obj_dict].insert(0,obj_postings)
-				# however, printing doc number so that we know about the progress
-				print "Document %s processed" % (str(total_docs))
+					# create the postings object with docID and term frequency
+					obj_postings = Postings(docId, v) 
+					if obj_dict in index:
+						index[obj_dict].insert(len(index[obj_dict]),obj_postings)
+					else:
+						index[obj_dict] = list()
+						index[obj_dict].insert(0,obj_postings)
+			# however, printing doc number so that we know about the progress
+			print "Document %s processed" % (str(total_docs))
 
-			except Exception as e:
-				print e
-				print "Exception occured"
-				pass
+			# except Exception as e:
+			# 	print e
+			# 	print "Exception occured"
+			# 	pass
 
 	print tokens
 	with open('index.txt','w') as index_file:
@@ -93,7 +100,6 @@ def calculate_tfIdf(tf, df, N):
 def clean_html(soup):
 	''' Input : DOM object of the html page
 		Output: DOM object of the html page with script tags, style tags and comments removed
-
 		The method removes all <script>, and <style> tags. 
 		It also removes all the comments from the html code 
 	'''
@@ -129,12 +135,11 @@ def extract_content(soup):
 	''' Input : DOM object of the html page
 		Output: Text extracted from all HTML tags, except the <head> tag
 	'''
-	try:
-		head_tag = soup.find('head')
+	
+	head_tag = soup.find('head')
+	if head_tag:
 		head_tag.extract()
-		return soup.getText()
-	except Exception:
-		print "No body"
+	return soup.getText()	
 
 def generate_tokens(text):
 	'''
@@ -143,7 +148,7 @@ def generate_tokens(text):
 
 	#contains the stopwords imported from nltk.stopwords
 	global stops
-	porter_stemmer = PorterStemmer()
+	snowball_stemmer = SnowballStemmer('english')
 	tokens = {}
 	for line in text.split('\n'):
 		line = line.strip().lower()
@@ -151,7 +156,7 @@ def generate_tokens(text):
 		for word in line.split(' '):
 			#if word, and word not a stopword
 			if len(word) > 0 and word not in stops:
-				word = porter_stemmer.stem(word)
+				word = snowball_stemmer.stem(str(word))
 				
 				#tokens is now a dictionary string -> int: (term, count) pair
 				if str(word) in tokens:
