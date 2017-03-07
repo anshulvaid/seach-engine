@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from bs4 import Comment
 from nltk.stem import SnowballStemmer
 from nltk.corpus import stopwords
+from urlparse import urlparse
 import sys
 
 reload(sys)
@@ -21,56 +22,61 @@ def main():
 	
 	urls = []
 	index = {}
-	tokens =[]
 	total_docs = 0
+
+	with open('WEBPAGES_RAW/bookkeeping.json') as data_file:    
+	    url_data = json.load(data_file)
+
 	for counter in range(75):
 		path = 'WEBPAGES_RAW/' + str(counter)
 		for filename in os.listdir(path):
 			file_path = path + "/" + filename	
-			# try:
-			file = open(file_path)
-			soup = BeautifulSoup(file, 'html.parser')
-			soup = clean_html(soup);
-			#docID is made of folder number concatenated with _filename
-			docId = str(counter) + "_" + filename
-			total_docs += 1
-			title = extract_title(soup)
+			try:
+				file = open(file_path)
+				soup = BeautifulSoup(file, 'html.parser')
+				soup = clean_html(soup);
+				#docID is made of folder number concatenated with _filename
+				docId = str(counter) + "/" + filename
+				url = url_data[docId]
+				if is_valid_url(docId, url):
+					total_docs += 1
+					title = extract_title(soup)
 
-			# commented print for now so that it doesn't slow down the processing
-			# if title:
-			# 	print "Title : " + title
-			
-			content = extract_content(soup)
-			if content:
-				# commented print for now so that it doesn't slow down the processing
-				# print "Content\n"
-				text = '\n'.join([x for x in content.split("\n") if x.strip()!=''])	
-				# generate tokens for title and body text
-				if title:
-					text =  title + "\n" + text		
-				tokens = generate_tokens(text)
+					# commented print for now so that it doesn't slow down the processing
+					# if title:
+					# 	print "Title : " + title
+					
+					content = extract_content(soup)
+					if content:
+						# commented print for now so that it doesn't slow down the processing
+						# print "Content\n"
+						text = '\n'.join([x for x in content.split("\n") if x.strip()!=''])	
+						# generate tokens for title and body text
+						if title:
+							text =  title + "\n" + text		
+						tokens = generate_tokens(text)
 
-				# might look complicated at first
-				# iterate over all the words that we obtained
-				for k, v in tokens.iteritems():
-					# create new object for Dictionary (referring index terminology) with only 'term' for now 
-					# TODO: Figure out the docFrequency part
-					obj_dict = Dictionary(k)
+						# might look complicated at first
+						# iterate over all the words that we obtained
+						for k, v in tokens.iteritems():
+							# create new object for Dictionary (referring index terminology) with only 'term' for now 
+							# TODO: Figure out the docFrequency part
+							obj_dict = Dictionary(k)
 
-					# create the postings object with docID and term frequency
-					obj_postings = Postings(docId, v) 
-					if obj_dict in index:
-						index[obj_dict].insert(len(index[obj_dict]),obj_postings)
-					else:
-						index[obj_dict] = list()
-						index[obj_dict].insert(0,obj_postings)
-			# however, printing doc number so that we know about the progress
-			print "Document %s processed" % (str(total_docs))
+							# create the postings object with docID and term frequency
+							obj_postings = Postings(docId, v) 
+							if obj_dict in index:
+								index[obj_dict].insert(len(index[obj_dict]),obj_postings)
+							else:
+								index[obj_dict] = list()
+								index[obj_dict].insert(0,obj_postings)
+					# however, printing doc number so that we know about the progress
+					print "Document %s processed" % (str(total_docs))
 
-			# except Exception as e:
-			# 	print e
-			# 	print "Exception occured"
-			# 	pass
+			except Exception as e:
+				print e
+				print "Exception occured"
+				pass
 
 	print tokens
 	with open('index.txt','w') as index_file:
@@ -84,11 +90,12 @@ def main():
 			postings_list = postings_list[:-1]
 			index_file.write(postings_list +'\n')
 		index_file.write(" Tokens generated : " + str(len(index)))
+		index_file.write(" Documents processed: " + str(total_docs))
 	
 
 	print " Tokens generated : " + str(len(index))
 	print ("--- %s seconds ---" % (time.time() - start_time))
-	print("documents processed -> " + str(total_docs))
+	print("documents processed -> " + str(total_docs))										
 	
 def calculate_tfIdf(tf, df, N):
 	# although the base of the log doesn't matter in this calculation
@@ -119,6 +126,29 @@ def clean_html(soup):
 	[comment.extract() for comment in comments]
 
 	return soup
+
+def is_valid_url(docId, url) :
+
+	# for now handling only these many traps, need to find more traps in the bookeeping.json
+	traps = ['calendar', 'ganglia', 'butterworth', 'arcus-3', '~mlearn', 'hall_of_fame', 'facebook', 'duttgroup', 'bren/index.php/bren_advance.php']
+
+	# for now, avoiding only these exceptions. These are the most frequent extensions found in bookeeping.json
+	file_extensions = {".plg", ".hpp ", ".pde", ".project", ".in", ".jpg", ".py", ".rkt", ".R", ".r", ".lif", ".java", ".cpp", ".cp", ".py", ".mexglx", ".h", ".opt", ".jpg", ".mzn", ".pov", ".db", ".out", ".map", ".txt" }
+
+	# Checks if the url belongs to the list of traps
+	if any(trap in url for trap in traps):
+		return False
+
+	#Checks if the url has the extension that belongs to file_extensions	
+	parsed = urlparse(url)
+	url = parsed[1] + parsed[2]
+	# find the occurence of dot character from the end of the url
+	index = url.rfind('.')
+	extension = url[index:]
+	if extension in file_extensions:
+		return False
+	return True
+
 
 def extract_title(soup):
 	''' Input : DOM object of the html page
