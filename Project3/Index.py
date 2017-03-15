@@ -4,7 +4,7 @@ class Dictionary:
 
 	def __init__(self, term):
 		self.term = term
-		# self.doc_frequency = df
+		self.doc_frequency = 0
 
 	def __hash__(self):
 		return hash(self.term)
@@ -21,7 +21,20 @@ class Postings:
 	docID = 0
 	term_frequency = 0
 	tf_idf = 0.0
+	position = []
 
-	def __init__(self, docId, tf):
+	def __init__(self, docId, tf, position):
 		self.docID = docId
 		self.term_frequency = tf
+		self.position = position
+
+class Documents:
+	docText = ""
+	docTitle = ""
+	docLink = ""
+
+	def __init__(self, text, title, url):
+		self.docText = text
+		self.docTitle = title
+		self.docLink = url
+	
