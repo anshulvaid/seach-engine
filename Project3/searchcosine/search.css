@@ -41,6 +41,7 @@ p {
   color: white;
   border: 4px solid white;
   border-radius: 50px;
+  font:16px arial,sans-serif;
 }
 .search-bar .toggle {
   -moz-transition: all 0.5s cubic-bezier(0.98, 0.02, 0.46, 0.99) 0.25s;
@@ -144,6 +145,19 @@ p {
     padding: 3px 3px 0px 0px;
     margin-left: -27px;
     max-width:500px;
+}
+
+.superclass{
+  font-weight: bold;
+}
+
+.resultList.url{
+  font-size: 15px;
+  /*color: #006621;*/
+}
+
+.resultList.snippet{
+  /*color:#545454;*/
 }
 
 .object {
