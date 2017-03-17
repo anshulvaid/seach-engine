@@ -3,11 +3,12 @@ var http = require('http'),
 	qs = require('querystring'),
 	MongoClient = require("mongodb").MongoClient,
 	snowball = require('node-snowball'),
-	databaseURL = "mongodb://localhost:27017/search_engine",
-	indexCollection = "Index",
+	databaseURL = "mongodb://localhost:27017/expressengine",
+	indexCollection = "sherlockIndex",
 	docCollection = "docIndex",
 	assert = require('assert'),
-	HashMap = require('hashmap');
+	HashMap = require('hashmap'),
+	sw = require('stopword');
 
 console.log("active")
 
@@ -26,8 +27,10 @@ var server = http.createServer(function onRequest(request, response){
 	var urlParts = url.parse(request.url);
 	var querystr = qs.parse(urlParts.query)
 	console.log(querystr.q)
-	var q = querystr.q
+	var q = querystr.q.toLowerCase()
+	q.replace(/[^a-zA-Z0-9' ]/g, " ");
 	var qArr = q.split(" ")
+	qArr = sw.removeStopwords(qArr)
 	qArr = snowball.stemword(qArr)
 	console.log(qArr)
 	// db.getCollection('Index').find({$or: [{token:"crista"}, {token:"lope"}]}).pretty()
@@ -54,18 +57,25 @@ var server = http.createServer(function onRequest(request, response){
 						var value = {tf_idf:doc.postings[i].tf_idf, pos:doc.postings[i].position[0]};
 						map.set(doc.postings[i].docID, value)
 					}
+					if(qArr.length <= 4){
+						if(doc.title.indexOf(doc.postings[i].docID) > -1)
+							(map.get(doc.postings[i].docID)).tf_idf += 50;
+						if(doc.url.indexOf(doc.postings[i].docID) > -1)
+							(map.get(doc.postings[i].docID)).tf_idf += 15;
+					}
 				}
 			}else{
 				query = {};
 				query["$or"] = [];
 				keysSorted = map.keys().sort(function(a,b){return (map.get(b)).tf_idf-(map.get(a)).tf_idf;});
-				for(var i=0; i<keysSorted.length; i++){
+				for(var i=0; i<Math.min(30,keysSorted.length); i++){
 					query["$or"].push({"docId":keysSorted[i]});
 				}
 				var cur = db.collection(docCollection).find(query);
 				docs = []
 				cur.each(function(e, doc2){
 					if(!e && doc2){
+						var index = keysSorted.indexOf(doc2.docId)
 						var titleWithBody = doc2.text 
 						// titleWithBody = titleWithBody.replace(/[^0-9a-z']\s/gi, '')
 						var textArr = titleWithBody.split(" ");
@@ -79,7 +89,7 @@ var server = http.createServer(function onRequest(request, response){
 						}
 						textArr = textArr.slice(start, end);
 						doc2.text = textArr.join(" ");
-						docs.push(doc2);
+						docs[index] = doc2;
 					}else{
 						db.close();
 						done();

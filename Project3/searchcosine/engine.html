@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+	<head>
+		<title>ICS Search</title>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.2/angular.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+		<link rel="stylesheet" href="search.css">
+	</head>
+
+
+	<body ng-app = "myApp">
+		<div id="search_text" class="move">
+			<p>
+			    ICS Search 
+			</p>
+		</div>
+		<div ng-controller="searchController" id="search-bar" class="search-bar move">
+		    <input ng-keyup="$event.keyCode == 13 && myFunc()" ng-model="query" />
+		    <div id="close" class="toggle" ng-click="query=null; datalist=null"></div>
+		
+
+			<div ng-repeat="doc in datalist">
+				<div class="resultBlock">  
+					<ul style="list-style:none;">
+						<li class="resultList"><a href="{{doc.url}}">{{doc.title}}</a></li>
+						<li class="resultList">{{doc.url}}</li>
+						<li class="resultList">{{doc.text}}</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<script>
+			angular.module("myApp", [])
+			.controller("searchController", ['$scope', function($scope){
+				$scope.query = ""
+				$scope.myFunc = function(){
+					  var url = "http://localhost:3000?q="+$scope.query;
+
+					  var xhr = createCORSRequest('GET', url);
+					  if (!xhr) {
+					    alert('CORS not supported');
+					    return;
+					  }
+
+					  // Response handlers.
+					  xhr.onload = function() {
+					    var text = xhr.responseText;
+					    $scope.$apply(function(){
+					    	$scope.datalist = JSON.parse(text);
+					    });
+					    console.log($scope.datalist)
+					    console.log('Response from ' + url + ' successful.');
+					  };
+
+					  xhr.onerror = function() {
+					    alert('Woops, there was an error making the request.');
+					  };
+
+					  xhr.send();
+					// $http.post("http://localhost:3300?q="+$scope.query
+		   //           ).success(function(data, status, headers, config) {
+		   //            alert("Success!")
+		   //           }).error(function(data, status, headers, config) {
+		   //             alert("Error");
+		   //          });
+	         	}
+			}]);
+
+			function createCORSRequest(method, url) {
+			  var xhr = new XMLHttpRequest();
+			  if ("withCredentials" in xhr) {
+			    // XHR for Chrome/Firefox/Opera/Safari.
+			    xhr.open(method, url, true);
+			  } else if (typeof XDomainRequest != "undefined") {
+			    // XDomainRequest for IE.
+			    xhr = new XDomainRequest();
+			    xhr.open(method, url);
+			  } else {
+			    // CORS not supported.
+			    xhr = null;
+			  }
+			  return xhr;
+			}
+
+		</script>
+	</body>
+	<script>
+		$(document).on('keypress',function(e){
+			if(e.which==13){
+				$('#search_text').addClass('move_nw object');
+				$('#search-bar').addClass('move_n object');
+			 }
+			});
+		$('#close').click(function(){
+			$('#search_text').removeClass('move_nw object');
+			$('#search-bar').removeClass('move_n object');
+			$(this).parent().toggleClass('closed');
+		    $(this).prev().focus();
+		});
+
+		setTimeout(function() {
+		    $('#close').click();
+		}, 100);
+
+		setTimeout(function() {
+		    $('#close').click();
+		}, 1500);
+
+	</script>
+</html>
+

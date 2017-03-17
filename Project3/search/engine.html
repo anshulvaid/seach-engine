@@ -3,6 +3,7 @@
 	<head>
 		<title>ICS Search</title>
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.2/angular.min.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.2/angular-sanitize.min.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 		<link rel="stylesheet" href="search.css">
 	</head>
@@ -10,8 +11,9 @@
 
 	<body ng-app = "myApp">
 		<div id="search_text" class="move">
+			
 			<p>
-			    ICS Search 
+			    ICS Search  
 			</p>
 		</div>
 		<div ng-controller="searchController" id="search-bar" class="search-bar move">
@@ -23,14 +25,15 @@
 				<div class="resultBlock">  
 					<ul style="list-style:none;">
 						<li class="resultList"><a href="{{doc.url}}">{{doc.title}}</a></li>
-						<li class="resultList">{{doc.url}}</li>
-						<li class="resultList">{{doc.text}}</li>
+						<li class="resultList url">{{doc.url}}</li>
+						<li class="resultList snippet" ng-bind-html="doc.text | searchfilter : query"></li>
+						<!-- <li class="resultList snippet">{{doc.text}}</li> -->
 					</ul>
 				</div>
 			</div>
 		</div>
 		<script>
-			angular.module("myApp", [])
+			angular.module("myApp", ['ngSanitize'])
 			.controller("searchController", ['$scope', function($scope){
 				$scope.query = ""
 				$scope.myFunc = function(){
@@ -45,7 +48,9 @@
 					  // Response handlers.
 					  xhr.onload = function() {
 					    var text = xhr.responseText;
-					    $scope.datalist = JSON.parse(text)
+					    $scope.$apply(function(){
+					    	$scope.datalist = JSON.parse(text);
+					    });
 					    console.log($scope.datalist)
 					    console.log('Response from ' + url + ' successful.');
 					  };
@@ -62,7 +67,20 @@
 		   //             alert("Error");
 		   //          });
 	         	}
-			}]);
+			}])
+			.filter('searchfilter', function() {
+			    return function (input, query) {
+			        if (query === '') {
+			            return input;
+			        }
+			        // var q = query.split(" ");
+			        // for(var i=0; i<q.length; i++){
+			        // 	console.log(input);
+			        // 	input = input.replace(RegExp('('+ q[i] + ')', 'gi'), '<span class="superclass">$1</span>');           
+			        // }
+			        return input.replace(RegExp('('+ query + ')', 'gi'), '<span class="superclass">$1</span>');;
+			    }    
+			});
 
 			function createCORSRequest(method, url) {
 			  var xhr = new XMLHttpRequest();
